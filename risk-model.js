@@ -6,12 +6,13 @@ export function buildAssessment(address, summary, txs, provider) {
   const txCount = (chainStats.tx_count ?? 0) + (mempoolStats.tx_count ?? 0);
   const spentOutputs = (chainStats.spent_txo_count ?? 0) + (mempoolStats.spent_txo_count ?? 0);
   const hasSpent = spentOutputs > 0;
-  const isReused = txCount > 1;
+  const isReused = spentOutputs > 0;
 
   const outputScriptType = inferOutputScriptType(address, txs);
   const spendProfile = inferSpendProfile(address, txs);
   const addressType = classifyAddressType(address, outputScriptType);
   const risk = classifyRisk(addressType, hasSpent, txCount, spendProfile);
+  const firstExposedAt = findFirstSpendingTx(address, txs);
 
   return {
     address,
@@ -20,12 +21,14 @@ export function buildAssessment(address, summary, txs, provider) {
     outputScriptType,
     spendProfile,
     txCount,
+    txsAnalyzed: txs.length,
     funded,
     spent,
     balance: funded - spent,
     spentOutputs,
     hasSpent,
     isReused,
+    firstExposedAt,
     risk,
   };
 }
@@ -325,6 +328,22 @@ export function classifyRisk(addressType, hasSpent, txCount, spendProfile = null
       "If funds are material, migrate with a wallet whose descriptor you understand.",
     ],
   };
+}
+
+export function findFirstSpendingTx(address, txs) {
+  let earliest = null;
+  for (const tx of txs) {
+    const isSpend = tx.vin?.some((vin) => vin.prevout?.scriptpubkey_address === address);
+    if (!isSpend || !tx.status?.confirmed) continue;
+    if (!earliest || tx.status.block_height < earliest.blockHeight) {
+      earliest = {
+        txid: tx.txid,
+        blockHeight: tx.status.block_height,
+        blockTime: tx.status.block_time,
+      };
+    }
+  }
+  return earliest;
 }
 
 export function escapeHtml(value) {

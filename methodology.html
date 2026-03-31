@@ -69,8 +69,10 @@
         <article class="panel insight-card">
           <p class="card-kicker">Reuse signal</p>
           <p>
-            BTCQ flags likely address reuse when total transaction count exceeds
-            one. This is a practical signal, not a wallet-descriptor analysis.
+            BTCQ flags likely address reuse when spent output count exceeds
+            zero. An address that has only received — but never sent — is not
+            flagged, because key material is only revealed on the spend path.
+            This is a practical signal, not a wallet-descriptor analysis.
           </p>
         </article>
 

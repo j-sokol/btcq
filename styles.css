@@ -323,11 +323,27 @@ button {
 }
 
 .sample-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   padding: 10px 14px;
   border-radius: 2px;
   background: rgba(10, 24, 19, 0.88);
   color: var(--ink);
   border: 1px solid var(--line);
+  text-align: left;
+}
+
+.sample-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.sample-why {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.3;
 }
 
 .status-message {

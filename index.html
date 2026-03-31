@@ -136,13 +136,16 @@
               <div class="sample-group">
                 <span>Examples</span>
                 <button class="sample-button" type="button" data-address="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
-                  Legacy
+                  <span class="sample-label">Tier 4 · P2PKH</span>
+                  <span class="sample-why">Satoshi's donation address — 62K txs, never spent</span>
                 </button>
-                <button class="sample-button" type="button" data-address="bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq">
-                  P2WPKH
+                <button class="sample-button" type="button" data-address="bc1qeppj9d8lh4t5s8ku7uccmsc0yvrhtjgjpv0gh3">
+                  <span class="sample-label">Tier 2 · Spent</span>
+                  <span class="sample-why">P2WPKH with 320 spent outputs — flags as Exposed</span>
                 </button>
-                <button class="sample-button" type="button" data-address="3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy">
-                  P2SH
+                <button class="sample-button" type="button" data-address="bc1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rusxg3297">
+                  <span class="sample-label">Tier 3 · Taproot</span>
+                  <span class="sample-why">P2TR with real history — shows Taproot explanation</span>
                 </button>
               </div>
             </div>
@@ -201,6 +204,7 @@
         <article class="panel insight-card">
           <p class="card-kicker">Tier guide</p>
           <ul class="tier-list">
+            <li><strong>Tier 1 High risk:</strong> P2PK — public key directly in the locking script.</li>
             <li><strong>Tier 2 Exposed:</strong> Spend history likely revealed key data.</li>
             <li><strong>Tier 3 Taproot:</strong> Output keys are committed on-chain.</li>
             <li><strong>Tier 4 Safer:</strong> Receive-only common address with no spend history.</li>
@@ -226,6 +230,63 @@
           </p>
           <p><a href="./methodology.html">Read the scoring methodology</a></p>
         </article>
+      </section>
+
+      <section class="explainer">
+        <div class="explainer-header">
+          <h2>Why this matters</h2>
+          <p>
+            On March 31, 2026, Google Quantum AI published research showing Bitcoin's elliptic-curve cryptography (ECDSA) could be broken with significantly fewer qubits than previously estimated — around 500,000 physical qubits versus prior estimates of millions. Bitcoin's Taproot upgrade was cited as inadvertently widening the exposed pool by making public keys visible on-chain by default.
+          </p>
+          <p>
+            Any address where the public key has already appeared on-chain — either because it used P2PK format, or because it has ever sent a transaction — can have its private key derived by a sufficiently powerful quantum computer running Shor's algorithm. No such machine exists today, but the timeline is moving faster than expected.
+          </p>
+        </div>
+
+        <div class="explainer-grid">
+          <div class="panel explainer-card">
+            <p class="card-kicker">Scale of exposure</p>
+            <table class="data-table">
+              <thead>
+                <tr><th>Source</th><th>BTC at risk</th><th>Est. USD</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Chaincode Labs 2025</td><td>6.26M BTC</td><td>~$650–750B</td></tr>
+                <tr><td>Coinbase analyst</td><td>6.51M BTC</td><td>~$435B</td></tr>
+                <tr><td>Ark Invest / Unchained</td><td>6.9M BTC (35% of supply)</td><td>~$461B</td></tr>
+                <tr><td>CoinDesk / CryptoQuant</td><td>~7M BTC (incl. Satoshi's 1M)</td><td>~$468B</td></tr>
+              </tbody>
+            </table>
+            <p class="table-note">Consensus range: 6–7 million BTC, roughly a third of circulating supply.</p>
+          </div>
+
+          <div class="panel explainer-card">
+            <p class="card-kicker">Historical price impact of large hacks</p>
+            <table class="data-table">
+              <thead>
+                <tr><th>Event</th><th>BTC involved</th><th>Price drop</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Mt. Gox (Feb 2014)</td><td>~740,000 BTC</td><td>−22% day 1, −36% over 6 weeks</td></tr>
+                <tr><td>Bitfinex (Aug 2016)</td><td>~120,000 BTC</td><td>−23%</td></tr>
+                <tr><td>Bybit (Feb 2025)</td><td>$1.5B equiv.</td><td>−2.1% (market matured)</td></tr>
+              </tbody>
+            </table>
+            <p class="table-note">Academic consensus: large-volume thefts produce statistically significant short-term price drops. Mass exploitation of 6M+ BTC has no historical precedent.</p>
+          </div>
+
+          <div class="panel explainer-card">
+            <p class="card-kicker">Timeline</p>
+            <ul class="tier-list">
+              <li><strong>Now (2026):</strong> No quantum computer capable of this attack exists. Current hardware has far too many logical errors.</li>
+              <li><strong>March 2026:</strong> BIP-360 (post-quantum P2QRH address format) went live on Bitcoin testnet.</li>
+              <li><strong>2029:</strong> Google's internal deadline for its own post-quantum migration — not a prediction that a capable machine will exist, but a planning horizon.</li>
+              <li><strong>2029–2035:</strong> Earliest plausible window cited by most analysts for a cryptographically-relevant quantum computer.</li>
+              <li><strong>10–40 years:</strong> The wider credible range from security researchers. Uncertainty is high.</li>
+            </ul>
+            <p class="table-note">The core risk is the coordination problem: migrating a decentralized global protocol takes years, and there is no central authority to respond on a short timeline.</p>
+          </div>
+        </div>
       </section>
     </div>
 

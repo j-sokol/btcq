@@ -181,8 +181,9 @@ function renderAssessment(model) {
     ${metric("Address type", model.addressType)}
     ${metric("Observed script type", model.outputScriptType ?? "Not observed in returned history")}
     ${metric("Spend profile", model.spendProfile.summary)}
-    ${metric("Transactions", formatNumber(model.txCount))}
+    ${metric("Transactions analyzed", formatNumber(model.txsAnalyzed))}
     ${metric("Spent outputs", formatNumber(model.spentOutputs))}
+    ${model.firstExposedAt ? metric("First exposed", `Block ${formatNumber(model.firstExposedAt.blockHeight)} &middot; ${formatBlockTime(model.firstExposedAt.blockTime)}`) : ""}
     ${metric("Address reuse", model.isReused ? "Likely reused" : "No reuse signal detected")}
     ${metric("Spend exposure", model.hasSpent ? "Spend history detected" : "No spend detected")}
     ${metric("Total received", formatBtc(model.funded))}
@@ -296,6 +297,14 @@ function formatBtc(sats) {
 
 function formatNumber(value) {
   return Number(value).toLocaleString();
+}
+
+function formatBlockTime(blockTime) {
+  return new Date(blockTime * 1000).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function setStatus(message) {

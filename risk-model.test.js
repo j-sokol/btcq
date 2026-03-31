@@ -5,6 +5,7 @@ import {
   buildAssessment,
   classifyAddressType,
   classifyRisk,
+  findFirstSpendingTx,
   inferOutputScriptType,
   inferSpendProfile,
 } from "./risk-model.js";
@@ -111,6 +112,37 @@ test("buildAssessment produces a consistent exposed result", () => {
   assert.equal(model.balance, 100000000);
   assert.equal(model.risk.tier, "Tier 2");
   assert.equal(model.isReused, true);
+  assert.equal(model.txsAnalyzed, 1);
+  assert.equal(model.firstExposedAt, null);
+});
+
+test("findFirstSpendingTx returns earliest confirmed spend or null", () => {
+  const address = "bc1qtarget";
+  const txs = [
+    {
+      txid: "aaa",
+      status: { confirmed: true, block_height: 840200, block_time: 1713600000 },
+      vin: [{ prevout: { scriptpubkey_address: address } }],
+    },
+    {
+      txid: "bbb",
+      status: { confirmed: true, block_height: 840100, block_time: 1713500000 },
+      vin: [{ prevout: { scriptpubkey_address: address } }],
+    },
+    {
+      txid: "ccc",
+      status: { confirmed: false, block_height: null, block_time: null },
+      vin: [{ prevout: { scriptpubkey_address: address } }],
+    },
+  ];
+
+  const result = findFirstSpendingTx(address, txs);
+  assert.equal(result.txid, "bbb");
+  assert.equal(result.blockHeight, 840100);
+  assert.equal(result.blockTime, 1713500000);
+
+  assert.equal(findFirstSpendingTx(address, []), null);
+  assert.equal(findFirstSpendingTx("other", txs), null);
 });
 
 test("buildAssessment upgrades spent P2SH into a specific exposed case", () => {
