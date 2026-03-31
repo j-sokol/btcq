@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BTCQ Risk Checker</title>
+    <meta
+      name="description"
+      content="Client-side Bitcoin address quantum risk checker powered by Esplora-compatible APIs."
+    />
+    <meta
+      name="robots"
+      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="BTCQ Risk Checker" />
+    <meta
+      property="og:description"
+      content="Check one or many Bitcoin addresses for likely public-key exposure, spend history, and script-type quantum risk."
+    />
+    <meta property="og:url" content="https://j-sokol.github.io/btcq/" />
+    <meta property="og:site_name" content="BTCQ Risk Checker" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="BTCQ Risk Checker" />
+    <meta
+      property="twitter:description"
+      content="Client-side Bitcoin address quantum risk checker with batch address input and custom Esplora endpoints."
+    />
+    <link rel="canonical" href="https://j-sokol.github.io/btcq/" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "BTCQ Risk Checker",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "description": "Client-side Bitcoin address quantum risk checker for batch address lookup and Esplora-compatible endpoints."
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">BTCQ</p>
+          <h1>Bitcoin address quantum risk checker</h1>
+          <p class="hero-text">
+            Paste a Bitcoin address to see whether its spend history or script
+            type likely exposes key material on-chain. The lookup runs from
+            your browser directly to a public Esplora API, not through this
+            app's backend.
+          </p>
+          <ul class="hero-points">
+            <li>Client-side lookup</li>
+            <li>No wallet connection</li>
+            <li>This site does not proxy or store address lookups</li>
+          </ul>
+        </div>
+        <aside class="hero-card">
+          <p class="card-kicker">How scoring works</p>
+          <ol>
+            <li>Detect the address type.</li>
+            <li>Walk full confirmed history for any prior spend.</li>
+            <li>Flag reuse and explain the likely key-exposure path.</li>
+          </ol>
+          <p class="research-link">
+            On March 31, 2026, Google Quantum AI published a cryptocurrency
+            quantum-vulnerability disclosure discussed heavily across the Bitcoin
+            ecosystem.
+            <a
+              href="https://research.google/blog/safeguarding-cryptocurrency-by-disclosing-quantum-vulnerabilities-responsibly/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Read the Google research note
+            </a>
+          </p>
+          <p class="hero-note">
+            This is a heuristic educational tool, not a formal security audit.
+            <a href="./methodology.html">Methodology</a>
+          </p>
+        </aside>
+      </header>
+
+      <main class="layout">
+        <section class="panel form-panel">
+          <form id="risk-form" novalidate>
+            <label class="field-label" for="address-input">Bitcoin address list</label>
+            <textarea
+              id="address-input"
+              name="address"
+              rows="6"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="One address per line, or separate by commas&#10;bc1q...&#10;bc1p...&#10;3..."
+              required
+            ></textarea>
+
+            <div class="input-row">
+              <button id="check-button" type="submit">Assess addresses</button>
+            </div>
+
+            <div class="controls-row">
+              <label class="select-wrap" for="provider-select">
+                <span>API endpoint</span>
+                <select id="provider-select" name="provider">
+                  <option value="https://blockstream.info/api">Blockstream</option>
+                  <option value="https://mempool.space/api">mempool.space</option>
+                  <option value="custom">Custom Esplora endpoint</option>
+                </select>
+              </label>
+
+              <label class="select-wrap endpoint-wrap" for="custom-provider-input" hidden>
+                <span>Your own indexed endpoint</span>
+                <input
+                  id="custom-provider-input"
+                  name="custom-provider"
+                  type="url"
+                  inputmode="url"
+                  placeholder="https://your-host.example/api"
+                  autocomplete="off"
+                  spellcheck="false"
+                  disabled
+                />
+              </label>
+
+              <div class="sample-group">
+                <span>Examples</span>
+                <button class="sample-button" type="button" data-address="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
+                  Legacy
+                </button>
+                <button class="sample-button" type="button" data-address="bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq">
+                  P2WPKH
+                </button>
+                <button class="sample-button" type="button" data-address="3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy">
+                  P2SH
+                </button>
+              </div>
+            </div>
+            <p class="helper-text">
+              Custom endpoint support requires an Esplora-compatible API. Raw Bitcoin Core RPC will not work without an indexer or compatibility layer.
+            </p>
+          </form>
+
+          <p id="status-message" class="status-message" aria-live="polite">
+            Enter one or more addresses to begin.
+          </p>
+        </section>
+
+        <section class="panel result-panel">
+          <div class="result-header">
+            <p class="card-kicker">Assessment</p>
+            <div id="risk-badge" class="risk-badge neutral">Waiting for input</div>
+          </div>
+
+          <div id="result-summary" class="result-summary empty">
+            <h2>No result yet</h2>
+            <p>
+              The checker will classify each address, inspect public stats, and
+              explain the likely quantum exposure profile.
+            </p>
+          </div>
+
+          <div id="batch-panel" class="batch-panel" hidden>
+            <div class="batch-panel-header">
+              <p class="card-kicker">Batch results</p>
+              <p id="batch-summary" class="batch-summary"></p>
+            </div>
+            <div id="batch-list" class="batch-list"></div>
+          </div>
+
+          <dl id="metrics-grid" class="metrics-grid" hidden></dl>
+
+          <div id="actions-panel" class="actions-panel" hidden>
+            <h3>What to do</h3>
+            <ul id="actions-list"></ul>
+            <p class="action-link">
+              Future migration path:
+              <a
+                href="https://github.com/bitcoin/bips"
+                target="_blank"
+                rel="noreferrer"
+              >
+                track Bitcoin Improvement Proposals for quantum-resistant output standards
+              </a>
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <section class="insights">
+        <article class="panel insight-card">
+          <p class="card-kicker">Tier guide</p>
+          <ul class="tier-list">
+            <li><strong>Tier 2 Exposed:</strong> Spend history likely revealed key data.</li>
+            <li><strong>Tier 3 Taproot:</strong> Output keys are committed on-chain.</li>
+            <li><strong>Tier 4 Safer:</strong> Receive-only common address with no spend history.</li>
+            <li><strong>Tier 5 Complex:</strong> P2SH or unusual scripts need deeper review.</li>
+          </ul>
+        </article>
+
+        <article class="panel insight-card">
+          <p class="card-kicker">Privacy model</p>
+          <p>
+            This frontend has no backend. Your browser calls the selected
+            public API directly. The API provider, your browser, and your
+            network path can still observe that request.
+          </p>
+        </article>
+
+        <article class="panel insight-card">
+          <p class="card-kicker">Important nuance</p>
+          <p>
+            Quantum risk depends on script design, whether an address has spent,
+            and future cryptanalytic capability. This app reports a practical,
+            conservative interpretation, not a prediction.
+          </p>
+          <p><a href="./methodology.html">Read the scoring methodology</a></p>
+        </article>
+      </section>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

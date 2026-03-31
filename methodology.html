@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BTCQ Methodology</title>
+    <meta
+      name="description"
+      content="Methodology for the BTCQ Bitcoin address quantum risk checker."
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://j-sokol.github.io/btcq/methodology.html" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">BTCQ / Methodology</p>
+          <h1>Scoring rules and privacy boundary</h1>
+          <p class="hero-text">
+            BTCQ is a heuristic classifier built on top of public Esplora API
+            data. It reports practical exposure signals, not a formal proof of
+            cryptographic safety.
+          </p>
+        </div>
+        <aside class="hero-card">
+          <p class="card-kicker">Core inputs</p>
+          <ol>
+            <li>Address summary stats from `/address/:address`.</li>
+            <li>Recent and paged confirmed history from address transaction endpoints.</li>
+            <li>Output script type plus spend-path hints from `vin` and `vout` data.</li>
+          </ol>
+          <p class="hero-note"><a href="./index.html">Back to checker</a></p>
+        </aside>
+      </header>
+
+      <main class="layout">
+        <section class="panel">
+          <p class="card-kicker">Risk tiers</p>
+          <ul class="tier-list">
+            <li><strong>Tier 1:</strong> `P2PK` outputs publish a public key directly in the locking script.</li>
+            <li><strong>Tier 2:</strong> Spent `P2PKH`, `P2WPKH`, `P2WSH`, or spent `P2SH` with revealed redeem or witness paths.</li>
+            <li><strong>Tier 3:</strong> `P2TR` output keys are committed on-chain even before spend-path details are known.</li>
+            <li><strong>Tier 4:</strong> Common `P2PKH` or `P2WPKH` addresses with no detected spend history.</li>
+            <li><strong>Tier 5:</strong> Unknown or currently under-specified cases, including unspent `P2SH` and no-history addresses.</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <p class="card-kicker">Complex script handling</p>
+          <ul class="tier-list">
+            <li>Spent `P2SH` is no longer treated as generically unknown if the API reveals a redeem or witness script path.</li>
+            <li>Wrapped SegWit spends are flagged when the redeem script begins with `OP_0 ...`.</li>
+            <li>Multisig is flagged when revealed script assembly includes `CHECKMULTISIG`.</li>
+            <li>`P2WSH` spends are treated as script-path exposure because witness-script details are typically revealed at spend time.</li>
+          </ul>
+        </section>
+      </main>
+
+      <section class="insights">
+        <article class="panel insight-card">
+          <p class="card-kicker">Reuse signal</p>
+          <p>
+            BTCQ flags likely address reuse when total transaction count exceeds
+            one. This is a practical signal, not a wallet-descriptor analysis.
+          </p>
+        </article>
+
+        <article class="panel insight-card">
+          <p class="card-kicker">Privacy boundary</p>
+          <p>
+            BTCQ has no backend and does not proxy requests, but the selected
+            public API provider still sees the lookup. Stronger privacy requires
+            a self-hosted endpoint or a separate network-privacy layer.
+          </p>
+        </article>
+
+        <article class="panel insight-card">
+          <p class="card-kicker">Known limits</p>
+          <p>
+            BTCQ does not parse every possible custom script or establish
+            cryptographic certainty. It is an educational triage tool built from
+            explorer-visible data.
+          </p>
+        </article>
+      </section>
+    </div>
+  </body>
+</html>
