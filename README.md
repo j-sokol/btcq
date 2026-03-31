@@ -2,6 +2,9 @@
 
 Static client-side Bitcoin address quantum risk checker.
 
+Repo: `https://github.com/j-sokol/btcq`
+Site: `https://j-sokol.github.io/btcq/`
+
 ## GitHub Pages
 
 This repo includes a GitHub Pages workflow at `.github/workflows/deploy-gh-pages.yml`.
