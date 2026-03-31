@@ -1,4 +1,4 @@
-export function buildAssessment(address, summary, txs, provider) {
+export function buildAssessment(address, summary, txs, provider, historyTruncated = false) {
   const chainStats = summary.chain_stats ?? {};
   const mempoolStats = summary.mempool_stats ?? {};
   const funded = (chainStats.funded_txo_sum ?? 0) + (mempoolStats.funded_txo_sum ?? 0);
@@ -29,6 +29,7 @@ export function buildAssessment(address, summary, txs, provider) {
     hasSpent,
     isReused,
     firstExposedAt,
+    historyTruncated,
     risk,
   };
 }

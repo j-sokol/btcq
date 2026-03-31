@@ -4,13 +4,13 @@ import {
 } from "./risk-model.js";
 
 const providers = {
-  "https://blockstream.info/api": {
-    name: "Blockstream",
-    url: "https://blockstream.info/api",
-  },
   "https://mempool.space/api": {
     name: "mempool.space",
     url: "https://mempool.space/api",
+  },
+  "https://blockstream.info/api": {
+    name: "Blockstream",
+    url: "https://blockstream.info/api",
   },
 };
 
@@ -30,6 +30,7 @@ const batchList = document.querySelector("#batch-list");
 const sampleButtons = document.querySelectorAll(".sample-button");
 const checkButton = document.querySelector("#check-button");
 const HISTORY_PAGE_SIZE = 25;
+const HISTORY_MAX_PAGES = 10;
 let lastBatchResults = [];
 let selectedBatchIndex = 0;
 
@@ -104,14 +105,14 @@ async function assessAddresses(addresses, provider) {
 
 async function assessSingleAddress(address, provider) {
   const addressSummaryPromise = fetchJson(`${provider.url}/address/${encodeURIComponent(address)}`);
-  const txsPromise = fetchAddressHistory(address, provider.url);
+  const historyPromise = fetchAddressHistory(address, provider.url);
 
-  const [addressSummary, txs] = await Promise.all([
+  const [addressSummary, { txs, truncated }] = await Promise.all([
     addressSummaryPromise,
-    txsPromise,
+    historyPromise,
   ]);
 
-  return buildAssessment(address, addressSummary, txs, provider);
+  return buildAssessment(address, addressSummary, txs, provider, truncated);
 }
 
 async function fetchAddressHistory(address, providerBaseUrl) {
@@ -123,11 +124,12 @@ async function fetchAddressHistory(address, providerBaseUrl) {
   let lastSeenTxid = recent.filter((tx) => tx.status?.confirmed).at(-1)?.txid;
 
   if (confirmedCount < HISTORY_PAGE_SIZE || !lastSeenTxid) {
-    return history;
+    return { txs: history, truncated: false };
   }
 
-  while (lastSeenTxid) {
-    setStatus(`Scanning full history for ${truncateMiddle(address)}...`);
+  let page = 1;
+  while (lastSeenTxid && page < HISTORY_MAX_PAGES) {
+    setStatus(`Scanning history for ${truncateMiddle(address)} (page ${page + 1})...`);
     const nextPage = await fetchJson(
       `${providerBaseUrl}/address/${encodedAddress}/txs/chain/${encodeURIComponent(lastSeenTxid)}`
     );
@@ -137,6 +139,7 @@ async function fetchAddressHistory(address, providerBaseUrl) {
     }
 
     history.push(...nextPage);
+    page += 1;
 
     if (nextPage.length < HISTORY_PAGE_SIZE) {
       break;
@@ -145,7 +148,7 @@ async function fetchAddressHistory(address, providerBaseUrl) {
     lastSeenTxid = nextPage.at(-1)?.txid;
   }
 
-  return history;
+  return { txs: history, truncated: page >= HISTORY_MAX_PAGES };
 }
 
 async function fetchJson(url, attempt = 0) {
@@ -210,7 +213,9 @@ function renderAssessment(model) {
     ${metric("Address type", model.addressType)}
     ${metric("Observed script type", model.outputScriptType ?? "Not observed in returned history")}
     ${metric("Spend profile", model.spendProfile.summary)}
-    ${metric("Transactions analyzed", formatNumber(model.txsAnalyzed))}
+    ${metric("Transactions analyzed", model.historyTruncated
+      ? `${formatNumber(model.txsAnalyzed)} (first ${HISTORY_MAX_PAGES} pages — address has ${formatNumber(model.txCount)} total)`
+      : formatNumber(model.txsAnalyzed))}
     ${metric("Spent outputs", formatNumber(model.spentOutputs))}
     ${model.firstExposedAt ? metric("First exposed", `Block ${formatNumber(model.firstExposedAt.blockHeight)} &middot; ${formatBlockTime(model.firstExposedAt.blockTime)}`) : ""}
     ${metric("Address reuse", model.isReused ? "Likely reused" : "No reuse signal detected")}
