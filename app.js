@@ -86,6 +86,7 @@ async function assessAddresses(addresses, provider) {
       setStatus(
         `Checking ${index + 1}/${addresses.length}: ${truncateMiddle(address)} via ${provider.name}...`
       );
+      if (index > 0) await sleep(350);
       const model = await assessSingleAddress(address, provider);
       results.push(model);
     }
@@ -147,22 +148,50 @@ async function fetchAddressHistory(address, providerBaseUrl) {
   return history;
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/json",
-    },
-  });
+async function fetchJson(url, attempt = 0) {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [1000, 2000, 4000];
+
+  let response;
+  try {
+    response = await fetch(url, { headers: { accept: "application/json" } });
+  } catch {
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_DELAYS[attempt];
+      setStatus(`Network error — retrying in ${delay / 1000}s… (attempt ${attempt + 1}/${MAX_RETRIES})`);
+      await sleep(delay);
+      return fetchJson(url, attempt + 1);
+    }
+    throw new Error(
+      "Could not reach the API. Check your connection or try a different endpoint."
+    );
+  }
+
+  if (response.status === 429) {
+    if (attempt < MAX_RETRIES) {
+      const retryAfter = Number(response.headers.get("retry-after")) || 0;
+      const delay = retryAfter > 0 ? retryAfter * 1000 : RETRY_DELAYS[attempt];
+      setStatus(`Rate limited — retrying in ${delay / 1000}s… (attempt ${attempt + 1}/${MAX_RETRIES})`);
+      await sleep(delay);
+      return fetchJson(url, attempt + 1);
+    }
+    throw new Error(
+      "The API is rate-limiting this checker. Wait a moment and try again, or switch to the other endpoint."
+    );
+  }
 
   if (!response.ok) {
     if (response.status === 400 || response.status === 404) {
       throw new Error("The address was not recognized by the selected API.");
     }
-
     throw new Error(`API request failed with status ${response.status}.`);
   }
 
   return response.json();
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function renderAssessment(model) {
