@@ -538,6 +538,62 @@ button {
   font-family: "IBM Plex Mono", monospace;
 }
 
+.tip-jar {
+  margin-top: 48px;
+  padding: 28px 0 40px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.tip-label {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.tip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 24, 19, 0.88);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+}
+
+.tip-address {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.95rem;
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.tip-address:hover {
+  text-decoration: underline;
+}
+
+.tip-copy {
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(87, 255, 178, 0.1);
+  border: 1px solid rgba(87, 255, 178, 0.3);
+  color: var(--brand-deep);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+
+.tip-copy:hover {
+  background: rgba(87, 255, 178, 0.18);
+}
+
+.tip-note {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
 @media (max-width: 960px) {
   .hero,
   .layout,

@@ -34,6 +34,14 @@ const HISTORY_MAX_PAGES = 10;
 let lastBatchResults = [];
 let selectedBatchIndex = 0;
 
+const tipCopyButton = document.querySelector("#tip-copy");
+tipCopyButton?.addEventListener("click", () => {
+  navigator.clipboard.writeText("btcq@lnbc.cz").then(() => {
+    tipCopyButton.textContent = "Copied!";
+    setTimeout(() => { tipCopyButton.textContent = "Copy"; }, 2000);
+  });
+});
+
 sampleButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const nextValue = button.dataset.address ?? "";
