@@ -1,9 +1,10 @@
-# BTCQ Risk Checker
+# BTCQ — Bitcoin Address Quantum Risk Checker
 
-Static client-side Bitcoin address quantum risk checker.
+**[https://j-sokol.github.io/btcq/](https://j-sokol.github.io/btcq/)**
 
-Repo: `https://github.com/j-sokol/btcq`
-Site: `https://j-sokol.github.io/btcq/`
+Check any Bitcoin address for quantum vulnerability: public-key exposure, spend history, and script type — all from your browser, no backend.
+
+Repo: [github.com/j-sokol/btcq](https://github.com/j-sokol/btcq)
 
 ## GitHub Pages
 
