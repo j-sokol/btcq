@@ -56,10 +56,10 @@
           </p>
           <h1>Bitcoin address quantum risk checker</h1>
           <p class="hero-text">
-            Paste a Bitcoin address to see whether its spend history or script
-            type likely exposes key material on-chain. The lookup runs from
-            your browser directly to a public Esplora API, not through this
-            app's backend.
+            Paste a Bitcoin address or <code>txid:vout</code> output reference
+            to see whether its spend history or script type likely exposes key
+            material on-chain. The lookup runs from your browser directly to a
+            public Esplora API, not through this app's backend.
           </p>
           <ul class="hero-points">
             <li>Client-side lookup</li>
@@ -70,7 +70,7 @@
         <aside class="hero-card">
           <p class="card-kicker">How scoring works</p>
           <ol>
-            <li>Detect the address type.</li>
+            <li>Detect the address or output type.</li>
             <li>Walk full confirmed history for any prior spend.</li>
             <li>Flag reuse and explain the likely key-exposure path.</li>
           </ol>
@@ -96,7 +96,7 @@
       <main class="layout">
         <section class="panel form-panel">
           <form id="risk-form" novalidate>
-            <label class="field-label" for="address-input">Bitcoin address list</label>
+            <label class="field-label" for="address-input">Bitcoin address or output reference list</label>
             <textarea
               id="address-input"
               name="address"
@@ -104,7 +104,7 @@
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
-              placeholder="One address per line, or separate by commas&#10;bc1q...&#10;bc1p...&#10;3..."
+              placeholder="One entry per line, or separate by commas&#10;bc1q...&#10;1...&#10;txid:vout"
               required
             ></textarea>
 
@@ -140,8 +140,11 @@
 
             <div class="sample-group">
               <span>Examples</span>
-              <button class="sample-button" type="button" data-address="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" title="Satoshi's donation address — 62K txs, never spent">
-                Tier 4 · P2PKH
+              <button class="sample-button" type="button" data-address="4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0" title="Genesis coinbase output — bare P2PK, public key visible on-chain">
+                Tier 1 · P2PK
+              </button>
+              <button class="sample-button" type="button" data-address="1BitcoinEaterAddressDontSendf59kuE" title="Receive-only P2PKH with many receipts and no spends — shows Safer tier">
+                Tier 4 · Receive-only P2PKH
               </button>
               <button class="sample-button" type="button" data-address="bc1qeppj9d8lh4t5s8ku7uccmsc0yvrhtjgjpv0gh3" title="P2WPKH with 320 spent outputs — flags as Exposed">
                 Tier 2 · Spent
@@ -153,7 +156,7 @@
           </form>
 
           <p id="status-message" class="status-message" aria-live="polite">
-            Enter one or more addresses to begin.
+            Enter one or more addresses or output references to begin.
           </p>
         </section>
 
@@ -166,7 +169,7 @@
           <div id="result-summary" class="result-summary empty">
             <h2>No result yet</h2>
             <p>
-              The checker will classify each address, inspect public stats, and
+              The checker will classify each entry, inspect public stats, and
               explain the likely quantum exposure profile.
             </p>
           </div>

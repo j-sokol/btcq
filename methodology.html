@@ -37,7 +37,7 @@
           <ul class="hero-points">
             <li>Script type detection from <code>vout</code> data</li>
             <li>Spend-path analysis from <code>vin</code> witnesses and scripts</li>
-            <li>Five risk tiers with specific actions</li>
+            <li>Five risk tiers for addresses and specific outputs</li>
           </ul>
         </div>
         <aside class="hero-card">
@@ -45,6 +45,7 @@
           <ol>
             <li>Address summary stats from <code>/address/:address</code>.</li>
             <li>Full confirmed transaction history, paged from <code>/address/:address/txs</code>.</li>
+            <li>Specific-output lookups from <code>/tx/:txid</code> and <code>/tx/:txid/outspend/:vout</code>.</li>
             <li>Script type inferred from <code>vout.scriptpubkey_type</code> and spend-path details from <code>vin</code> fields.</li>
           </ol>
           <p class="hero-note">
@@ -87,6 +88,12 @@
               addresses with no detected spend history. The public key is hidden behind a hash
               and has not yet appeared on-chain. This is the practical target for address hygiene —
               receive-only, single-use, never spent.
+            </li>
+            <li>
+              Some legacy <code>P2PKH</code> addresses still need manual caution even without a spend
+              if the same key hash is historically linked to an older <code>P2PK</code> output whose
+              public key is already public elsewhere on-chain. BTCQ treats known cases like that as
+              exposed, not as Tier 4 receive-only addresses.
             </li>
             <li>
               <strong><span class="risk-badge mini unknown">Tier 5</span> Manual review.</strong>

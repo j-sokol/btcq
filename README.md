@@ -23,7 +23,7 @@ Then:
 
 ## What it does
 
-- Accepts one Bitcoin address or a batch list
+- Accepts one Bitcoin address, a batch list, or a specific `txid:vout` output reference
 - Calls an Esplora-compatible API directly from the browser
 - Supports a user-specified Esplora-compatible endpoint
 - Classifies the address into a practical risk tier
@@ -57,12 +57,13 @@ Run the logic tests with:
 npm test
 ```
 
-The tests cover address-type detection, script-type inference, tier classification, and an end-to-end assessment case.
+The tests cover address-type detection, script-type inference, output-reference classification, tier classification, and end-to-end assessment cases.
 There are also utility tests for batch-input parsing and custom endpoint handling.
 
 ## Notes
 
 - The assessment is heuristic.
+- Some legacy `P2PKH` addresses are explicitly marked exposed when they are historically linked to earlier bare-pubkey outputs whose public keys are already on-chain.
 - P2SH is intentionally treated as a manual-review case.
 - Taproot is treated separately because the output key is committed on-chain.
 - The page links to the March 31, 2026 Google Quantum AI research note referenced in the product framing.

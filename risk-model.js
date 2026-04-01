@@ -1,3 +1,23 @@
+const KNOWN_ADDRESS_OVERRIDES = {
+  "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa": {
+    note: "Address hash is historically linked to a bare-pubkey output whose key material is already public.",
+    spendProfileSummary: "Known public-key linkage outside this address's own spend history.",
+    risk: {
+      tier: "Tier 2",
+      label: "Exposed elsewhere",
+      badgeClass: "high",
+      headline: "Matching public key is already exposed on-chain",
+      explanation:
+        "This address receives funds as P2PKH, but the same key hash is historically linked to an earlier bare-pubkey output whose public key is already visible on-chain. Those UTXOs should not be treated as quantum-hidden just because this address itself never spent.",
+      actions: [
+        "Do not treat receipts to this address as safer receive-only funds.",
+        "Use a fresh modern address whose public key has not appeared elsewhere.",
+        "If funds here matter, migrate them using a wallet with a clear post-quantum migration plan.",
+      ],
+    },
+  },
+};
+
 export function buildAssessment(address, summary, txs, provider, historyTruncated = false) {
   const chainStats = summary.chain_stats ?? {};
   const mempoolStats = summary.mempool_stats ?? {};
@@ -10,8 +30,9 @@ export function buildAssessment(address, summary, txs, provider, historyTruncate
 
   const outputScriptType = inferOutputScriptType(address, txs);
   const spendProfile = inferSpendProfile(address, txs);
+  const knownExposure = inferKnownExposure(address);
   const addressType = classifyAddressType(address, outputScriptType);
-  const risk = classifyRisk(addressType, hasSpent, txCount, spendProfile);
+  const risk = knownExposure?.risk ?? classifyRisk(addressType, hasSpent, txCount, spendProfile);
   const firstExposedAt = findFirstSpendingTx(address, txs);
 
   return {
@@ -19,7 +40,13 @@ export function buildAssessment(address, summary, txs, provider, historyTruncate
     provider,
     addressType,
     outputScriptType,
-    spendProfile,
+    spendProfile: knownExposure
+      ? {
+          ...spendProfile,
+          summary: knownExposure.spendProfileSummary,
+        }
+      : spendProfile,
+    knownExposure,
     txCount,
     txsAnalyzed: txs.length,
     funded,
@@ -31,6 +58,59 @@ export function buildAssessment(address, summary, txs, provider, historyTruncate
     firstExposedAt,
     historyTruncated,
     risk,
+  };
+}
+
+export function inferKnownExposure(address) {
+  return KNOWN_ADDRESS_OVERRIDES[address] ?? null;
+}
+
+export function buildOutputAssessment(outputRef, tx, voutIndex, outspend, provider) {
+  const output = tx.vout?.[voutIndex];
+  if (!output) {
+    throw new Error("The selected output was not found in the transaction.");
+  }
+
+  const outputScriptType = output.scriptpubkey_type ?? null;
+  const addressType = classifyAddressType(output.scriptpubkey_address ?? outputRef, outputScriptType);
+  const hasSpent = outspend?.spent === true;
+
+  return {
+    address: outputRef,
+    provider,
+    subjectKind: "output",
+    addressType,
+    outputScriptType,
+    spendProfile: {
+      spendingTxCount: hasSpent ? 1 : 0,
+      wrappedSegwit: false,
+      witnessScriptExposed: false,
+      redeemScriptExposed: false,
+      multisig: false,
+      pubkeyMaterialExposed: false,
+      scriptPathExposed: false,
+      summary: hasSpent
+        ? "Output reference points to a spent output."
+        : "Output reference points to an unspent output.",
+    },
+    knownExposure: null,
+    txCount: 1,
+    txsAnalyzed: 1,
+    funded: output.value ?? 0,
+    spent: hasSpent ? output.value ?? 0 : 0,
+    balance: hasSpent ? 0 : output.value ?? 0,
+    spentOutputs: hasSpent ? 1 : 0,
+    hasSpent,
+    isReused: hasSpent,
+    firstExposedAt: hasSpent && outspend?.status?.confirmed
+      ? {
+          txid: outspend.txid ?? "",
+          blockHeight: outspend.status.block_height,
+          blockTime: outspend.status.block_time,
+        }
+      : null,
+    historyTruncated: false,
+    risk: classifyRisk(addressType, hasSpent, 1, null),
   };
 }
 
@@ -141,6 +221,7 @@ export function classifyAddressType(address, outputScriptType) {
     if (outputScriptType.includes("witness_v0_scripthash")) return "P2WSH";
     if (outputScriptType.includes("scripthash")) return "P2SH";
     if (outputScriptType.includes("pubkeyhash")) return "P2PKH";
+    if (outputScriptType === "p2pk") return "P2PK";
     if (outputScriptType.includes("pubkey")) return "P2PK";
   }
 

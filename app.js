@@ -1,5 +1,6 @@
 import {
   buildAssessment,
+  buildOutputAssessment,
   escapeHtml,
 } from "./risk-model.js";
 
@@ -80,12 +81,12 @@ clearButton.addEventListener("click", () => {
 });
 
 sampleButtons.forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
     const nextValue = button.dataset.address ?? "";
-    addressInput.value = addressInput.value.trim()
-      ? `${addressInput.value.trim()}\n${nextValue}`
-      : nextValue;
+    addressInput.value = nextValue;
     addressInput.focus();
+    await submitAssessment();
   });
 });
 
@@ -100,11 +101,15 @@ providerSelect.addEventListener("change", () => {
 
 riskForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  await submitAssessment();
+});
+
+async function submitAssessment() {
   const addresses = parseAddressList(addressInput.value);
   const providerConfig = resolveProviderConfig(providerSelect.value, customProviderInput.value);
 
   if (addresses.length === 0) {
-    renderError("Enter at least one Bitcoin address.");
+    renderError("Enter at least one Bitcoin address or txid:vout output reference.");
     return;
   }
 
@@ -114,7 +119,7 @@ riskForm.addEventListener("submit", async (event) => {
   }
 
   await assessAddresses(addresses, providerConfig.value);
-});
+}
 
 async function assessAddresses(addresses, provider) {
   setLoadingState(true);
@@ -150,6 +155,15 @@ async function assessAddresses(addresses, provider) {
 }
 
 async function assessSingleAddress(address, provider) {
+  const outpoint = parseOutpoint(address);
+  if (outpoint) {
+    const tx = await fetchJson(`${provider.url}/tx/${encodeURIComponent(outpoint.txid)}`);
+    const outspend = await fetchJson(
+      `${provider.url}/tx/${encodeURIComponent(outpoint.txid)}/outspend/${outpoint.vout}`
+    );
+    return buildOutputAssessment(address, tx, outpoint.vout, outspend, provider);
+  }
+
   const addressSummaryPromise = fetchJson(`${provider.url}/address/${encodeURIComponent(address)}`);
   const historyPromise = fetchAddressHistory(address, provider.url);
 
@@ -257,8 +271,9 @@ function renderAssessment(model) {
 
   metricsGrid.hidden = false;
   metricsGrid.innerHTML = `
-    ${metric("Address type", model.addressType)}
+    ${metric(model.subjectKind === "output" ? "Output type" : "Address type", model.addressType)}
     ${metric("Observed script type", model.outputScriptType ?? "Not observed in returned history")}
+    ${model.knownExposure ? metric("Historical caveat", model.knownExposure.note) : ""}
     ${metric("Spend profile", model.spendProfile.summary)}
     ${metric("Transactions analyzed", model.historyTruncated
       ? `${formatNumber(model.txsAnalyzed)} (first ${HISTORY_MAX_PAGES} pages — address has ${formatNumber(model.txCount)} total)`
@@ -336,6 +351,16 @@ function renderError(message) {
 
 function parseAddressList(value) {
   return [...new Set(value.split(/[\n,]+/).map((entry) => entry.trim()).filter(Boolean))];
+}
+
+function parseOutpoint(value) {
+  const match = value.match(/^([0-9a-fA-F]{64}):(\d+)$/);
+  if (!match) return null;
+
+  return {
+    txid: match[1].toLowerCase(),
+    vout: Number(match[2]),
+  };
 }
 
 function resolveProviderConfig(selectedValue, customValue) {

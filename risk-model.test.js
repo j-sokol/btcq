@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   buildAssessment,
+  buildOutputAssessment,
   classifyAddressType,
   classifyRisk,
   findFirstSpendingTx,
+  inferKnownExposure,
   inferOutputScriptType,
   inferSpendProfile,
 } from "./risk-model.js";
@@ -34,6 +36,13 @@ test("inferOutputScriptType reads the address output from tx history", () => {
   ]);
 
   assert.equal(scriptType, "v1_p2tr");
+});
+
+test("inferKnownExposure flags historically exposed address aliases", () => {
+  const known = inferKnownExposure("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+  assert.equal(known?.risk.tier, "Tier 2");
+  assert.match(known?.note ?? "", /bare-pubkey output/i);
+  assert.equal(inferKnownExposure("1BoatSLRHtKNngkdXEeobR76b53LETtpyT"), null);
 });
 
 test("classifyRisk marks spent segwit and legacy receive addresses differently", () => {
@@ -189,4 +198,63 @@ test("buildAssessment upgrades spent P2SH into a specific exposed case", () => {
   assert.equal(model.addressType, "P2SH");
   assert.equal(model.spendProfile.wrappedSegwit, true);
   assert.equal(model.risk.tier, "Tier 2");
+});
+
+test("buildAssessment overrides receive-only P2PKH when pubkey is known elsewhere", () => {
+  const model = buildAssessment(
+    "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+    {
+      chain_stats: {
+        tx_count: 10,
+        funded_txo_sum: 5000000000,
+        spent_txo_sum: 0,
+        spent_txo_count: 0,
+      },
+      mempool_stats: {
+        tx_count: 0,
+        funded_txo_sum: 0,
+        spent_txo_sum: 0,
+        spent_txo_count: 0,
+      },
+    },
+    [
+      {
+        vout: [
+          {
+            scriptpubkey_address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+            scriptpubkey_type: "p2pkh",
+          },
+        ],
+      },
+    ],
+    { name: "Test API", url: "https://example.test/api" }
+  );
+
+  assert.equal(model.addressType, "P2PKH");
+  assert.equal(model.outputScriptType, "p2pkh");
+  assert.equal(model.risk.tier, "Tier 2");
+  assert.equal(model.risk.label, "Exposed elsewhere");
+  assert.match(model.spendProfile.summary, /outside this address/i);
+});
+
+test("buildOutputAssessment classifies bare P2PK outputs as Tier 1", () => {
+  const model = buildOutputAssessment(
+    "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0",
+    {
+      vout: [
+        {
+          scriptpubkey_type: "p2pk",
+          value: 5000000000,
+        },
+      ],
+    },
+    0,
+    { spent: false },
+    { name: "Test API", url: "https://example.test/api" }
+  );
+
+  assert.equal(model.subjectKind, "output");
+  assert.equal(model.addressType, "P2PK");
+  assert.equal(model.risk.tier, "Tier 1");
+  assert.equal(model.balance, 5000000000);
 });
