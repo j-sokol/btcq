@@ -29,6 +29,7 @@ const batchSummary = document.querySelector("#batch-summary");
 const batchList = document.querySelector("#batch-list");
 const sampleButtons = document.querySelectorAll(".sample-button");
 const checkButton = document.querySelector("#check-button");
+const resultPanel = document.querySelector("#result-panel");
 const clearButton = document.querySelector("#clear-button");
 const HISTORY_PAGE_SIZE = 25;
 const HISTORY_MAX_PAGES = 1;
@@ -214,7 +215,8 @@ function sleep(ms) {
 
 function renderAssessment(model) {
   riskBadge.className = `risk-badge ${model.risk.badgeClass}`;
-  riskBadge.textContent = `${model.risk.tier} ${model.risk.label}`;
+  riskBadge.innerHTML = `<span class="badge-label">${model.risk.label}</span><span class="badge-tier">${model.risk.tier}</span>`;
+  resultPanel.dataset.risk = model.risk.badgeClass;
 
   resultSummary.classList.remove("empty");
   resultSummary.innerHTML = `
@@ -252,7 +254,15 @@ function renderBatch(results) {
   }
 
   batchPanel.hidden = false;
-  batchSummary.textContent = `${results.length} address${results.length === 1 ? "" : "es"} scanned`;
+  const tierCounts = results.reduce((acc, r) => {
+    acc[r.risk.badgeClass] = (acc[r.risk.badgeClass] || { label: r.risk.label, count: 0 });
+    acc[r.risk.badgeClass].count += 1;
+    return acc;
+  }, {});
+  const tierSummary = Object.entries(tierCounts)
+    .map(([cls, { label, count }]) => `<span class="risk-badge mini ${cls}">${count} ${label}</span>`)
+    .join(" ");
+  batchSummary.innerHTML = `${results.length} address${results.length === 1 ? "" : "es"} &nbsp; ${tierSummary}`;
   batchList.innerHTML = results
     .map((result, index) => {
       const activeClass = index === selectedBatchIndex ? " active" : "";
