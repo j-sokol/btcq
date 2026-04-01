@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BTCQ Methodology</title>
+    <title>BTCQ | Methodology</title>
     <meta
       name="description"
-      content="Methodology for the BTCQ Bitcoin address quantum risk checker."
+      content="How BTCQ classifies Bitcoin addresses into quantum risk tiers — script type detection, spend-path analysis, and privacy boundary."
     />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://j-sokol.github.io/btcq/methodology.html" />
@@ -23,22 +23,34 @@
     <div class="page-shell">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">BTCQ / Methodology</p>
-          <h1>Scoring rules and privacy boundary</h1>
-          <p class="hero-text">
-            BTCQ is a heuristic classifier built on top of public Esplora API
-            data. It reports practical exposure signals, not a formal proof of
-            cryptographic safety.
+          <p class="eyebrow">
+            <svg class="btc-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path fill="#F7931A" d="M22.1 14c.4-2.4-1.5-3.7-4-4.6l.8-3.2-2-.5-.8 3.1c-.5-.1-1.1-.3-1.6-.4l.8-3.2-2-.5-.8 3.2c-.4-.1-.9-.2-1.3-.3l-2.7-.7-.5 2.1s1.5.3 1.4.4c.8.2.9.7.9 1.1l-.9 3.7.2.1-.2-.1-1.3 5.1c-.1.2-.3.6-.9.4l-1.4-.4-.9 2.3 2.6.6 1.4.4-.8 3.2 2 .5.8-3.2.8.2v.1l-.8 3.2 2 .5.8-3.2c3.3.6 5.8.4 6.8-2.6.8-2.4 0-3.7-1.7-4.6 1.2-.3 2.1-1.1 2.3-2.7zm-4.1 5.8c-.6 2.4-4.8 1.1-6.1.8l1.1-4.4c1.4.3 5.9 1 5 3.6zm.6-5.8c-.6 2.2-4 1.1-5.2.8l1-4c1.1.3 4.8.8 4.2 3.2z"/></svg>
+            BTCQ / Methodology
           </p>
+          <h1>How addresses are scored</h1>
+          <p class="hero-text">
+            BTCQ is a heuristic classifier built on public Esplora API data. It
+            reports practical exposure signals based on what is directly
+            observable on-chain — not a formal proof of cryptographic safety or
+            a prediction about quantum hardware timelines.
+          </p>
+          <ul class="hero-points">
+            <li>Script type detection from <code>vout</code> data</li>
+            <li>Spend-path analysis from <code>vin</code> witnesses and scripts</li>
+            <li>Five risk tiers with specific actions</li>
+          </ul>
         </div>
         <aside class="hero-card">
-          <p class="card-kicker">Core inputs</p>
+          <p class="card-kicker">Data inputs</p>
           <ol>
-            <li>Address summary stats from `/address/:address`.</li>
-            <li>Recent and paged confirmed history from address transaction endpoints.</li>
-            <li>Output script type plus spend-path hints from `vin` and `vout` data.</li>
+            <li>Address summary stats from <code>/address/:address</code>.</li>
+            <li>Full confirmed transaction history, paged from <code>/address/:address/txs</code>.</li>
+            <li>Script type inferred from <code>vout.scriptpubkey_type</code> and spend-path details from <code>vin</code> fields.</li>
           </ol>
-          <p class="hero-note"><a href="./index.html">Back to checker</a></p>
+          <p class="hero-note">
+            This is a heuristic educational tool, not a formal security audit.
+            <a href="./index.html">Back to checker</a>
+          </p>
         </aside>
       </header>
 
@@ -46,21 +58,75 @@
         <section class="panel">
           <p class="card-kicker">Risk tiers</p>
           <ul class="tier-list">
-            <li><strong>Tier 1:</strong> `P2PK` outputs publish a public key directly in the locking script.</li>
-            <li><strong>Tier 2:</strong> Spent `P2PKH`, `P2WPKH`, `P2WSH`, or spent `P2SH` with revealed redeem or witness paths.</li>
-            <li><strong>Tier 3:</strong> `P2TR` output keys are committed on-chain even before spend-path details are known.</li>
-            <li><strong>Tier 4:</strong> Common `P2PKH` or `P2WPKH` addresses with no detected spend history.</li>
-            <li><strong>Tier 5:</strong> Unknown or currently under-specified cases, including unspent `P2SH` and no-history addresses.</li>
+            <li>
+              <strong><span class="risk-badge mini high">Tier 1</span> P2PK — high risk.</strong>
+              <code>P2PK</code> outputs embed the full public key directly in the locking script
+              (<code>&lt;pubkey&gt; OP_CHECKSIG</code>). The key is visible on-chain from the
+              moment the coins are received — no spend is required to expose it. This is the
+              format Satoshi used for all early coinbase outputs. Funds in <code>P2PK</code>
+              addresses are the most immediately vulnerable if a capable quantum computer
+              becomes available.
+            </li>
+            <li>
+              <strong><span class="risk-badge mini high">Tier 2</span> Spent address — exposed.</strong>
+              Applies to <code>P2PKH</code>, <code>P2WPKH</code>, <code>P2WSH</code>, and
+              <code>P2SH</code> addresses that have at least one confirmed spend. Spending from
+              these address types reveals the public key or redeem script in the transaction
+              input — making that material permanently visible on-chain.
+            </li>
+            <li>
+              <strong><span class="risk-badge mini medium">Tier 3</span> Taproot.</strong>
+              <code>P2TR</code> outputs commit an x-only public key in the output itself, making
+              the key observable before any spend. The spend-path risk profile differs from
+              older scripts, but the output key exposure is analogous to <code>P2PK</code> in
+              that it does not require a spend to become visible.
+            </li>
+            <li>
+              <strong><span class="risk-badge mini low">Tier 4</span> Safer — no spend detected.</strong>
+              Common <code>P2PKH</code> (<code>1...</code>) or <code>P2WPKH</code> (<code>bc1q...</code>)
+              addresses with no detected spend history. The public key is hidden behind a hash
+              and has not yet appeared on-chain. This is the practical target for address hygiene —
+              receive-only, single-use, never spent.
+            </li>
+            <li>
+              <strong><span class="risk-badge mini unknown">Tier 5</span> Manual review.</strong>
+              Unspent <code>P2SH</code> addresses and addresses with no on-chain history.
+              <code>P2SH</code> hides a redeem script until spend time, so the quantum
+              exposure depends entirely on what sits behind that script. This checker treats
+              it as a manual-review case until a spend reveals the script.
+            </li>
           </ul>
         </section>
 
         <section class="panel">
           <p class="card-kicker">Complex script handling</p>
           <ul class="tier-list">
-            <li>Spent `P2SH` is no longer treated as generically unknown if the API reveals a redeem or witness script path.</li>
-            <li>Wrapped SegWit spends are flagged when the redeem script begins with `OP_0 ...`.</li>
-            <li>Multisig is flagged when revealed script assembly includes `CHECKMULTISIG`.</li>
-            <li>`P2WSH` spends are treated as script-path exposure because witness-script details are typically revealed at spend time.</li>
+            <li>
+              <strong>Spent <code>P2SH</code></strong> is not treated as generically unknown
+              once the API returns spend-path data. If the redeem script or witness script is
+              visible in the response, BTCQ classifies it further — into multisig, wrapped
+              SegWit, or general script-path exposure — and assigns Tier 2 accordingly.
+            </li>
+            <li>
+              <strong>Wrapped SegWit</strong> is flagged when the redeem script assembly
+              begins with <code>OP_0</code>, indicating a <code>P2SH-P2WPKH</code> or
+              <code>P2SH-P2WSH</code> construction. Once spent, the redeem path is public.
+            </li>
+            <li>
+              <strong>Multisig</strong> is flagged when the revealed script assembly includes
+              <code>CHECKMULTISIG</code> in either the redeem script or witness script fields.
+            </li>
+            <li>
+              <strong><code>P2WSH</code> spends</strong> are treated as script-path exposure
+              because witness-script details — including any embedded public keys — are
+              typically revealed in full at spend time.
+            </li>
+            <li>
+              <strong>Public key material in inputs</strong> is flagged when <code>scriptsig_asm</code>
+              includes <code>OP_PUSHBYTES_33</code> or <code>OP_PUSHBYTES_65</code>, or when
+              witness stack items are 33 or 65 bytes — the compressed and uncompressed public
+              key lengths.
+            </li>
           </ul>
         </section>
       </main>
@@ -69,31 +135,54 @@
         <article class="panel insight-card">
           <p class="card-kicker">Reuse signal</p>
           <p>
-            BTCQ flags likely address reuse when spent output count exceeds
-            zero. An address that has only received — but never sent — is not
-            flagged, because key material is only revealed on the spend path.
-            This is a practical signal, not a wallet-descriptor analysis.
+            BTCQ flags address reuse when <code>spent_txo_count</code> exceeds zero. An
+            address that has only received — but never sent — is not flagged, because the
+            public key is only revealed on the spend path. This is a practical on-chain
+            signal, not a wallet-descriptor or UTXO graph analysis.
           </p>
         </article>
 
         <article class="panel insight-card">
           <p class="card-kicker">Privacy boundary</p>
           <p>
-            BTCQ has no backend and does not proxy requests, but the selected
-            public API provider still sees the lookup. Stronger privacy requires
-            a self-hosted endpoint or a separate network-privacy layer.
+            BTCQ has no backend and does not proxy or log requests. The lookup goes from
+            your browser directly to the selected public API provider. That provider, your
+            network path, and your browser can still observe which address was queried.
+            Stronger privacy requires a self-hosted Esplora endpoint or a separate
+            network-privacy layer such as Tor.
           </p>
         </article>
 
         <article class="panel insight-card">
           <p class="card-kicker">Known limits</p>
           <p>
-            BTCQ does not parse every possible custom script or establish
-            cryptographic certainty. It is an educational triage tool built from
-            explorer-visible data.
+            BTCQ fetches the first page of confirmed history (up to 25 transactions plus
+            one additional page for addresses with deep history). Addresses with very large
+            transaction counts may be assessed on a partial view — this is noted in the
+            results when it occurs. The tool does not parse every possible custom script
+            or establish cryptographic certainty. It is an educational triage tool built
+            from explorer-visible data.
           </p>
         </article>
       </section>
+
+      <footer class="tip-jar">
+        <p class="tip-label">⚡ If this tool saved you time, send a sat</p>
+        <div class="tip-row">
+          <a class="tip-address" href="lightning:btcq@lnbc.cz">btcq@lnbc.cz</a>
+          <button class="tip-copy" id="tip-copy" type="button" aria-label="Copy Lightning address">Copy</button>
+        </div>
+        <p class="tip-note">Opens your Lightning wallet on mobile · paste manually on desktop</p>
+      </footer>
     </div>
+
+    <script>
+      document.querySelector("#tip-copy")?.addEventListener("click", function () {
+        navigator.clipboard.writeText("btcq@lnbc.cz").then(() => {
+          this.textContent = "Copied!";
+          setTimeout(() => { this.textContent = "Copy"; }, 2000);
+        });
+      });
+    </script>
   </body>
 </html>

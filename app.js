@@ -31,6 +31,7 @@ const sampleButtons = document.querySelectorAll(".sample-button");
 const checkButton = document.querySelector("#check-button");
 const resultPanel = document.querySelector("#result-panel");
 const clearButton = document.querySelector("#clear-button");
+const exportCsvButton = document.querySelector("#export-csv-button");
 const HISTORY_PAGE_SIZE = 25;
 const HISTORY_MAX_PAGES = 1;
 let lastBatchResults = [];
@@ -42,6 +43,35 @@ tipCopyButton?.addEventListener("click", () => {
     tipCopyButton.textContent = "Copied!";
     setTimeout(() => { tipCopyButton.textContent = "Copy"; }, 2000);
   });
+});
+
+exportCsvButton?.addEventListener("click", () => {
+  if (lastBatchResults.length === 0) return;
+  const rows = [
+    ["address", "tier", "label", "address_type", "script_type", "has_spent", "spent_outputs", "first_exposed_block", "first_exposed_date", "balance_btc", "total_received_btc", "total_sent_btc"],
+    ...lastBatchResults.map((r) => [
+      r.address,
+      r.risk.tier,
+      r.risk.label,
+      r.addressType,
+      r.outputScriptType ?? "",
+      r.hasSpent ? "yes" : "no",
+      r.spentOutputs,
+      r.firstExposedAt?.blockHeight ?? "",
+      r.firstExposedAt ? formatBlockTime(r.firstExposedAt.blockTime) : "",
+      satsToBtc(r.balance),
+      satsToBtc(r.funded),
+      satsToBtc(r.spent),
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `btcq-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 });
 
 clearButton.addEventListener("click", () => {
@@ -378,6 +408,17 @@ function setLoadingState(isLoading) {
 function truncateMiddle(value) {
   if (value.length < 18) return value;
   return `${value.slice(0, 8)}...${value.slice(-8)}`;
+}
+
+function satsToBtc(sats) {
+  return (Number(sats) / 100000000).toFixed(8);
+}
+
+function csvCell(value) {
+  const str = String(value ?? "");
+  return str.includes(",") || str.includes('"') || str.includes("\n")
+    ? `"${str.replaceAll('"', '""')}"`
+    : str;
 }
 
 function normalizeError(error) {

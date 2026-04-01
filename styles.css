@@ -487,6 +487,31 @@ button {
   line-height: 1.02;
 }
 
+.batch-panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.export-csv-button {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.export-csv-button:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
 .batch-panel {
   margin: 6px 0 18px;
   padding: 16px;
