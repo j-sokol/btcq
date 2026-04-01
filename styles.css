@@ -222,8 +222,24 @@ a {
 
 .input-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 12px;
+}
+
+#clear-button {
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+#clear-button:hover {
+  color: var(--ink);
+  border-color: rgba(79, 255, 173, 0.35);
 }
 
 input,

@@ -29,8 +29,9 @@ const batchSummary = document.querySelector("#batch-summary");
 const batchList = document.querySelector("#batch-list");
 const sampleButtons = document.querySelectorAll(".sample-button");
 const checkButton = document.querySelector("#check-button");
+const clearButton = document.querySelector("#clear-button");
 const HISTORY_PAGE_SIZE = 25;
-const HISTORY_MAX_PAGES = 10;
+const HISTORY_MAX_PAGES = 1;
 let lastBatchResults = [];
 let selectedBatchIndex = 0;
 
@@ -40,6 +41,11 @@ tipCopyButton?.addEventListener("click", () => {
     tipCopyButton.textContent = "Copied!";
     setTimeout(() => { tipCopyButton.textContent = "Copy"; }, 2000);
   });
+});
+
+clearButton.addEventListener("click", () => {
+  addressInput.value = "";
+  addressInput.focus();
 });
 
 sampleButtons.forEach((button) => {
@@ -104,6 +110,7 @@ async function assessAddresses(addresses, provider) {
     renderBatch(results);
     renderAssessment(results[0]);
     setStatus("Assessment complete.");
+    pushAddressesToUrl(addresses);
   } catch (error) {
     renderError(normalizeError(error));
   } finally {
@@ -225,7 +232,7 @@ function renderAssessment(model) {
       ? `${formatNumber(model.txsAnalyzed)} (first ${HISTORY_MAX_PAGES} pages — address has ${formatNumber(model.txCount)} total)`
       : formatNumber(model.txsAnalyzed))}
     ${metric("Spent outputs", formatNumber(model.spentOutputs))}
-    ${model.firstExposedAt ? metric("First exposed", `Block ${formatNumber(model.firstExposedAt.blockHeight)} &middot; ${formatBlockTime(model.firstExposedAt.blockTime)}`) : ""}
+    ${model.firstExposedAt ? metric("Spend observed", `Block ${formatNumber(model.firstExposedAt.blockHeight)} &middot; ${formatBlockTime(model.firstExposedAt.blockTime)}`) : ""}
     ${metric("Address reuse", model.isReused ? "Likely reused" : "No reuse signal detected")}
     ${metric("Spend exposure", model.hasSpent ? "Spend history detected" : "No spend detected")}
     ${metric("Total received", formatBtc(model.funded))}
@@ -370,3 +377,24 @@ function normalizeError(error) {
 
   return "Unexpected error while querying the address.";
 }
+
+function pushAddressesToUrl(addresses) {
+  const params = new URLSearchParams();
+  addresses.forEach((a) => params.append("address", a));
+  const newUrl = `${location.pathname}?${params}`;
+  history.replaceState(null, "", newUrl);
+}
+
+// On load: if ?address= params are present, pre-fill and auto-run
+(function bootFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const addresses = params.getAll("address").filter(Boolean);
+  if (addresses.length === 0) return;
+
+  addressInput.value = addresses.join("\n");
+
+  const providerConfig = resolveProviderConfig(providerSelect.value, customProviderInput.value);
+  if (providerConfig.ok) {
+    assessAddresses(addresses, providerConfig.value);
+  }
+}());
